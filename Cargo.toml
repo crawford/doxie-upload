@@ -1,0 +1,15 @@
+[package]
+name = "doxie-upload"
+version = "0.1.0-dev"
+authors = ["Alex Crawford <doxie-upload@code.acrawford.com>"]
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0.31"
+env_logger = "0.7.1"
+hyper = "0.13.7"
+log = "0.4.11"
+multipart-async = { git = "https://github.com/abonander/multipart-async", default-features = false, features = [ "server", "hyper" ] }
+structopt = "0.3.15"
+tokio = { version = "0.2.21", features = [ "macros" ] }
+uuid = { version = "0.8.1", features = [ "v4" ] }
