@@ -1,7 +1,7 @@
-use anyhow::{Error, Result};
+use anyhow::{Context, Error, Result};
 use hyper::server::conn::AddrStream;
 use hyper::{service, Body, Request, Response, Server, StatusCode};
-use log::{debug, info, trace, LevelFilter};
+use log::{debug, error, info, trace, LevelFilter};
 use multipart_async::{server::Multipart, BodyChunk};
 use std::fs::File;
 use std::io::Write;
@@ -59,49 +59,64 @@ async fn main() -> Result<()> {
 }
 
 async fn handle_request(opts: Arc<Options>, req: Request<Body>) -> Result<Response<Body>> {
-    Ok(match Multipart::try_from_request(req) {
-        Ok(multipart) => match handle_multipart(&opts, multipart).await {
-            Ok(Some(path)) => Response::builder()
+    match Multipart::try_from_request(req) {
+        Ok(multipart) => match handle_multipart(&opts, multipart)
+            .await
+            .context("handling multipart form")
+        {
+            Ok(Some(path)) => Ok(Response::builder()
                 .status(StatusCode::CREATED)
-                .body(Body::from(format!("Uploaded {}", path.display())))?,
-            Ok(None) => Response::builder()
+                .body(Body::from(format!("Uploaded {}", path.display())))
+                .context("creating response")?),
+            Ok(None) => Ok(Response::builder()
                 .status(StatusCode::BAD_REQUEST)
-                .body(Body::from("No file in request"))?,
-            Err(err) => Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::from(err.to_string()))?,
+                .body(Body::from("No file in request"))
+                .context("creating response")?),
+            Err(err) => {
+                error!("{:#}", err);
+                Ok(Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(Body::empty())
+                    .context("creating response")?)
+            }
         },
-        Err(_) => Response::builder()
+        Err(_) => Ok(Response::builder()
             .status(StatusCode::BAD_REQUEST)
-            .body(Body::from("Expecting multipart/form-data"))?,
-    })
+            .body(Body::from("Expecting multipart/form-data"))
+            .context("creating response")?),
+    }
 }
 
 async fn handle_multipart(
     opts: &Options,
     mut multipart: Multipart<Body>,
 ) -> Result<Option<PathBuf>> {
-    while let Some(mut field) = multipart.next_field().await? {
+    while let Some(mut field) = multipart.next_field().await.context("next form field")? {
         if field.headers.name != "file" {
             debug!(r#"Ignoring unexpected field "{}""#, field.headers.name);
             continue;
         }
 
-        let path = field
+        let filename = field
             .headers
             .filename
             .and_then(|path| PathBuf::from(path).file_name().map(PathBuf::from))
             .unwrap_or_else(|| Uuid::new_v4().to_simple().to_string().into());
+        let path = opts.root.join(&filename);
 
-        let mut upload = File::create(opts.root.join(&path))?;
-        while let Some(chunk) = field.data.try_next().await? {
+        let mut upload =
+            File::create(&path).with_context(|| format!("creating file ({})", path.display()))?;
+
+        while let Some(chunk) = field.data.try_next().await.context("next field chunk")? {
             trace!("Got field chunk, len: {:?}", chunk.len());
-            upload.write_all(chunk.as_slice())?
+            upload
+                .write_all(chunk.as_slice())
+                .with_context(|| format!("writing file ({})", path.display()))?
         }
 
-        info!("Created {}", path.display());
+        info!("Created {}", filename.display());
 
-        return Ok(Some(path));
+        return Ok(Some(filename));
     }
 
     Ok(None)
