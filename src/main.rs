@@ -3,6 +3,7 @@ use hyper::server::conn::AddrStream;
 use hyper::{service, Body, Request, Response, Server, StatusCode};
 use log::{debug, error, info, trace, LevelFilter};
 use multipart_async::{server::Multipart, BodyChunk};
+use std::ffi::OsString;
 use std::fs::File;
 use std::io::Write;
 use std::net::IpAddr;
@@ -97,11 +98,14 @@ async fn handle_multipart(
             continue;
         }
 
-        let filename = field
+        let extension = field
             .headers
             .filename
-            .and_then(|path| PathBuf::from(path).file_name().map(PathBuf::from))
-            .unwrap_or_else(|| Uuid::new_v4().to_simple().to_string().into());
+            .map(PathBuf::from)
+            .and_then(|f| f.extension().map(|e| e.to_os_string()))
+            .unwrap_or(OsString::from("pdf"));
+        let filename =
+            PathBuf::from(Uuid::new_v4().to_simple().to_string()).with_extension(extension);
         let path = opts.root.join(&filename);
 
         let mut upload =
