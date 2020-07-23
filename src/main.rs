@@ -65,7 +65,7 @@ async fn handle_request(opts: Arc<Options>, req: Request<Body>) -> Result<Respon
             .context("handling multipart form")
         {
             Ok(Some(path)) => Ok(Response::builder()
-                .status(StatusCode::CREATED)
+                .status(StatusCode::OK)
                 .body(Body::from(format!("Uploaded {}", path.display())))
                 .context("creating response")?),
             Ok(None) => Ok(Response::builder()
