@@ -13,6 +13,10 @@ use structopt::StructOpt;
 use tokio::stream::StreamExt;
 use uuid::Uuid;
 
+#[cfg_attr(feature = "container", path = "container.rs")]
+#[cfg_attr(not(feature = "container"), path = "host.rs")]
+mod sys;
+
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Simple HTTP server that accepts file uploads and writes them to disk")]
 struct Options {
@@ -54,9 +58,10 @@ async fn main() -> Result<()> {
                 }))
             }
         }))
+        .with_graceful_shutdown(sys::wait_for_shutdown())
         .await?;
 
-    Ok(())
+    sys::cleanup()
 }
 
 async fn handle_request(opts: Arc<Options>, req: Request<Body>) -> Result<Response<Body>> {
