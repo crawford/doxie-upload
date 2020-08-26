@@ -3,7 +3,7 @@ FROM rust:1.40 as builder
 WORKDIR /src/
 COPY . .
 RUN rustup target add x86_64-unknown-linux-musl
-RUN cargo build --release --target=x86_64-unknown-linux-musl
+RUN cargo build --release --features=container --target=x86_64-unknown-linux-musl
 
 
 FROM scratch
