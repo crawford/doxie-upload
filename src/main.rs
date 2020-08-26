@@ -108,7 +108,7 @@ async fn handle_multipart(
             .filename
             .map(PathBuf::from)
             .and_then(|f| f.extension().map(|e| e.to_os_string()))
-            .unwrap_or(OsString::from("pdf"));
+            .unwrap_or_else(|| OsString::from("pdf"));
         let filename =
             PathBuf::from(Uuid::new_v4().to_simple().to_string()).with_extension(extension);
         let path = opts.root.join(&filename);
