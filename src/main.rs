@@ -1,4 +1,5 @@
 use anyhow::{Context, Error, Result};
+use futures::future::FutureExt;
 use hyper::server::conn::AddrStream;
 use hyper::{service, Body, Request, Response, Server, StatusCode};
 use log::{debug, error, info, trace, LevelFilter};
@@ -54,7 +55,7 @@ async fn main() -> Result<()> {
             let opts = opts.clone();
             async move {
                 Ok::<_, Error>(service::service_fn(move |req| {
-                    handle_request(opts.clone(), req)
+                    handle_request(opts.clone(), req).inspect(|resp| debug!("Response {:?}", resp))
                 }))
             }
         }))
