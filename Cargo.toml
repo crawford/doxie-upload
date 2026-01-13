@@ -1,6 +1,6 @@
 [package]
 name = "doxie-upload"
-version = "0.2.0-dev"
+version = "0.3.0-dev"
 authors = [ "Alex Crawford <doxie-upload@code.acrawford.com>" ]
 edition = "2018"
 
