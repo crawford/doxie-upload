@@ -1,20 +1,22 @@
 [package]
 name = "doxie-upload"
 version = "0.2.0-dev"
-authors = ["Alex Crawford <doxie-upload@code.acrawford.com>"]
+authors = [ "Alex Crawford <doxie-upload@code.acrawford.com>" ]
 edition = "2018"
 
 [dependencies]
 anyhow = "1.0.31"
 env_logger = "0.7.1"
-hyper = "0.13.7"
+futures = "0.3.14"
+http-body-util = "0.1.3"
+hyper = { version = "1.8.1", features = [ "http1", "server" ] }
+hyper-util = { version = "0.1.19", features = ["tokio"] }
 log = "0.4.11"
-multipart-async = { git = "https://github.com/abonander/multipart-async", default-features = false, features = [ "server", "hyper" ] }
+multer = "3.1.0"
 nix = "0.18.0"
 structopt = "0.3.15"
-tokio = { version = "0.2.21", features = [ "macros", "signal" ] }
+tokio = { version = "1.49.0", features = [ "macros", "net", "rt", "signal" ] }
 uuid = { version = "0.8.1", features = [ "v4" ] }
-futures = "0.3.14"
 
 [features]
 container = []
